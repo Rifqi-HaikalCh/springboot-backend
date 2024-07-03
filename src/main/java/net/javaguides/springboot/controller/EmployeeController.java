@@ -2,7 +2,8 @@ package net.javaguides.springboot.controller;
 
 import net.javaguides.springboot.exception.ResourceNotFoundException;
 import net.javaguides.springboot.model.Employee;
-import net.javaguides.springboot.repository.EmployeeRepository;
+import net.javaguides.springboot.model.properties.EmployeeProperties;
+import net.javaguides.springboot.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,52 +17,50 @@ import java.util.List;
 public class EmployeeController {
 
     @Autowired
-    private EmployeeRepository employeeRepository;
+    private EmployeeService employeeService;
 
     @GetMapping
-    public List<Employee> getAllEmployees(){
-        return employeeRepository.findAll();
+    public List<Employee> getAllEmployees() {
+        return employeeService.getAllEmployees();
     }
 
-    // build create employee REST API
     @PostMapping
-    public Employee createEmployee(@RequestBody Employee employee) {
-        return employeeRepository.save(employee);
+    public ResponseEntity<Employee> createEmployee(@RequestBody EmployeeProperties employeeProperties) {
+        Employee employee = new Employee();
+        mapEmployeePropertiesToEmployee(employeeProperties, employee);
+        Employee savedEmployee = employeeService.saveEmployee(employee);
+        return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
     }
 
-    // build get employee by id REST API
-    @GetMapping("{id}")
-    public ResponseEntity<Employee> getEmployeeById(@PathVariable  long id){
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id:" + id));
+    @GetMapping("/{id}")
+    public ResponseEntity<Employee> getEmployeeById(@PathVariable Long id) {
+        Employee employee = employeeService.getEmployeeById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
         return ResponseEntity.ok(employee);
     }
 
-    // build update employee REST API
-    @PutMapping("{id}")
-    public ResponseEntity<Employee> updateEmployee(@PathVariable long id,@RequestBody Employee employeeDetails) {
-        Employee updateEmployee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id));
+    @PutMapping("/{id}")
+    public ResponseEntity<Employee> updateEmployee(@PathVariable Long id, @RequestBody EmployeeProperties employeeProperties) {
+        Employee employeeToUpdate = employeeService.getEmployeeById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
 
-        updateEmployee.setFirstName(employeeDetails.getFirstName());
-        updateEmployee.setLastName(employeeDetails.getLastName());
-        updateEmployee.setEmailId(employeeDetails.getEmailId());
+        mapEmployeePropertiesToEmployee(employeeProperties, employeeToUpdate);
 
-        employeeRepository.save(updateEmployee);
+        employeeService.updateEmployee(employeeToUpdate);
 
-        return ResponseEntity.ok(updateEmployee);
+        return ResponseEntity.ok(employeeToUpdate);
     }
 
-    // build delete employee REST API
-    @DeleteMapping("{id}")
-    public ResponseEntity<HttpStatus> deleteEmployee(@PathVariable long id){
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
+        employeeService.deleteEmployeeById(id);
+        return ResponseEntity.noContent().build();
+    }
 
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id));
-
-        employeeRepository.delete(employee);
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-
+    private void mapEmployeePropertiesToEmployee(EmployeeProperties employeeProperties, Employee employee) {
+        employee.setFirstName(employeeProperties.getFirstName());
+        employee.setLastName(employeeProperties.getLastName());
+        employee.setEmailId(employeeProperties.getEmailId());
+        employee.setDateOfBirth(employeeProperties.getDateOfBirth());
     }
 }

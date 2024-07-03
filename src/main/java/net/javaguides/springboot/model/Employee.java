@@ -4,8 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import jakarta.persistence.*;
+import javax.persistence.*;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -27,4 +27,7 @@ public class Employee {
 
     @Column(name = "email_id")
     private String emailId;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 }
